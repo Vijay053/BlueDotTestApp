@@ -63,8 +63,10 @@ class _MapWidgetState extends State<MapWidget> {
               child: FractionallySizedBox(
                 widthFactor: 0.8,
                 child: TextField(
-                  decoration:
-                      const InputDecoration(suffixIcon: Icon(Icons.search)),
+                  decoration: const InputDecoration(
+                    suffixIcon: Icon(Icons.search),
+                    hintText: 'eg: restaurants, fuel station etc',
+                  ),
                   onSubmitted: (value) =>
                       locationService.searchNearByPlaces(value),
                   textInputAction: TextInputAction.search,

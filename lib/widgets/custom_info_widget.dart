@@ -31,10 +31,10 @@ class CustomInfoWidget extends StatelessWidget {
                       alignment: Alignment.topCenter,
                       child: SizedBox(
                         width: 150,
-                        child: Image.network(
+                        child:place.photos.isNotEmpty ? Image.network(
                           place.photos.first.photoThumbUrl,
                           fit: BoxFit.fitWidth,
-                        ),
+                        ) : const Placeholder(),
                       ),
                     ),
                   ),
