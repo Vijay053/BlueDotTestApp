@@ -1,11 +1,28 @@
 import 'package:blue_dot_test_app/models/places.dart';
 import 'package:blue_dot_test_app/services/location_service.dart';
+import 'package:custom_info_window/custom_info_window.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 
-class MapWidget extends StatelessWidget {
+import 'custom_info_widget.dart';
+
+class MapWidget extends StatefulWidget {
   const MapWidget({Key? key}) : super(key: key);
+
+  @override
+  State<MapWidget> createState() => _MapWidgetState();
+}
+
+class _MapWidgetState extends State<MapWidget> {
+  final CustomInfoWindowController _customInfoWindowController =
+      CustomInfoWindowController();
+
+  @override
+  void dispose() {
+    _customInfoWindowController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,16 +37,26 @@ class MapWidget extends StatelessWidget {
               initialCameraPosition: locationService.currentMapPosition,
               onMapCreated: (GoogleMapController controller) {
                 locationService.controller.complete(controller);
+                _customInfoWindowController.googleMapController = controller;
               },
-              onCameraMove: (CameraPosition position) =>
-                  locationService.locationLatLng = position.target,
+              onCameraMove: (CameraPosition position) {
+                locationService.locationLatLng = position.target;
+                _customInfoWindowController.onCameraMove!();
+              },
               onCameraIdle: () => locationService.updateSearchResults(),
               zoomControlsEnabled: false,
               markers: getMarkerWidgetList(placesList),
               onTap: (LatLng latLng) {
+                _customInfoWindowController.hideInfoWindow!();
                 locationService.updateLocation(latLng);
               },
             ),
+          ),
+          CustomInfoWindow(
+            controller: _customInfoWindowController,
+            height: 100,
+            width: 150,
+            offset: 70,
           ),
           Positioned.fill(
             child: Align(
@@ -63,14 +90,19 @@ class MapWidget extends StatelessWidget {
   Set<Marker> getMarkerWidgetList(List<Place> markerList) {
     return markerList.map(
       (Place place) {
+        final latLang = LatLng(
+          place.geometry.location.lat,
+          place.geometry.location.lng,
+        );
         return Marker(
           markerId: MarkerId(place.placeId),
-          position: LatLng(
-            place.geometry.location.lat,
-            place.geometry.location.lng,
-          ),
-          infoWindow: InfoWindow(title: place.name, snippet: '*'),
-          onTap: () {},
+          position: latLang,
+          onTap: () {
+            _customInfoWindowController.addInfoWindow!(
+              CustomInfoWidget(place),
+              latLang,
+            );
+          },
         );
       },
     ).toSet();
