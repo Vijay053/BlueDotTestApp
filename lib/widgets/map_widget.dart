@@ -1,3 +1,4 @@
+import 'package:blue_dot_test_app/models/places.dart';
 import 'package:blue_dot_test_app/services/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -10,15 +11,38 @@ class MapWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final locationService = Provider.of<LocationService>(context);
     return Scaffold(
-      body: GoogleMap(
-        mapType: MapType.terrain,
-        initialCameraPosition: locationService.currentMapPosition,
-        onMapCreated: (GoogleMapController controller) {
-          locationService.controller.complete(controller);
-        },
+      body: Stack(
+        children: [
+          ValueListenableBuilder(
+            valueListenable: locationService.placesList,
+            builder: (context, placesList, child) => GoogleMap(
+              mapType: MapType.terrain,
+              initialCameraPosition: locationService.currentMapPosition,
+              onMapCreated: (GoogleMapController controller) {
+                locationService.controller.complete(controller);
+              },
+              markers: getMarkerWidgetList(placesList),
+            ),
+          ),
+          Positioned.fill(
+            child: Align(
+              alignment: const Alignment(0, -0.9),
+              child: FractionallySizedBox(
+                widthFactor: 0.8,
+                child: TextField(
+                  decoration:
+                      const InputDecoration(suffixIcon: Icon(Icons.search)),
+                  onSubmitted: (value) =>
+                      locationService.searchNearByPlaces(value),
+                  textInputAction: TextInputAction.search,
+                ),
+              ),
+            ),
+          )
+        ],
       ),
       floatingActionButton: FloatingActionButton.small(
-        onPressed: () => locationService.getNearByPlaces('atm'),
+        onPressed: () => locationService.showCurrentPosition(),
         // onPressed: () => locationService.showCurrentPosition(),
         backgroundColor: Colors.white,
         child: const Icon(
@@ -27,5 +51,19 @@ class MapWidget extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Set<Marker> getMarkerWidgetList(List<Place> markerList) {
+    return markerList
+        .map((Place place) => Marker(
+              markerId: MarkerId(place.placeId),
+              position: LatLng(
+                place.geometry.location.lat,
+                place.geometry.location.lng,
+              ),
+              infoWindow: InfoWindow(title: place.name, snippet: '*'),
+              onTap: () {},
+            ))
+        .toSet();
   }
 }

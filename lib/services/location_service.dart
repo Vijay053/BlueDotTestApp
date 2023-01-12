@@ -2,22 +2,30 @@ import 'dart:async';
 
 import 'package:blue_dot_test_app/models/places.dart';
 import 'package:blue_dot_test_app/services/web_apis.dart';
+import 'package:blue_dot_test_app/utilities/logger.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
 class LocationService {
+  LocationService() {
+    currentMapPosition = CameraPosition(
+      target: LatLng(locationData.latitude!, locationData.longitude!),
+      zoom: 14.4746,
+    );
+  }
+
   Location location = Location();
   LocationData locationData = LocationData.fromMap({
     'latitude': 37.42796133580664,
     'longitude': -122.085749655962,
   });
+  ValueNotifier<List<Place>> placesList = ValueNotifier([]);
   PermissionStatus _permissionGranted = PermissionStatus.denied;
   final Completer<GoogleMapController> controller =
       Completer<GoogleMapController>();
-  CameraPosition currentMapPosition = const CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 14.4746,
-  );
+  late CameraPosition currentMapPosition;
+  Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
 
   Future<void> getLocationPermission() async {
     bool serviceEnabled;
@@ -48,6 +56,7 @@ class LocationService {
 
   Future<void> changeCurrentPosition() async {
     if (locationData.latitude != null && locationData.longitude != null) {
+      Log.d('${locationData.latitude}, ${locationData.longitude}');
       currentMapPosition = CameraPosition(
         target: LatLng(locationData.latitude!, locationData.longitude!),
         zoom: 14.4746,
@@ -59,9 +68,10 @@ class LocationService {
     }
   }
 
-  Future<void> getNearByPlaces(String searchQuery) async {
+  Future<void> searchNearByPlaces(String searchQuery) async {
+    if (searchQuery.isEmpty) return;
     if (locationData.latitude != null && locationData.longitude != null) {
-      List<Place> places = await WebApiService().getNearByPlaces(
+      placesList.value = await WebApiService().getNearByPlaces(
         LatLng(locationData.latitude!, locationData.longitude!),
         searchQuery,
         radius: 1500,
