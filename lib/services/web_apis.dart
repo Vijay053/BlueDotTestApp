@@ -22,4 +22,13 @@ class WebApiService {
     var jsonResults = json['results'] as List;
     return jsonResults.map((place) => Place.fromJson(place)).toList();
   }
+
+  Future<Place> getPlaceDetailsById(String placeId) async {
+    final url = "https://maps.googleapis.com/maps/api/place/details/json?"
+        "place_id=$placeId"
+        "&key=$apiKey";
+    var response = await http.get(Uri.parse(url));
+    var json = jsonDecode(response.body);
+    return Place.fromJson(json['result']);
+  }
 }

@@ -1,11 +1,10 @@
 import 'package:blue_dot_test_app/models/places.dart';
 import 'package:blue_dot_test_app/services/location_service.dart';
+import 'package:blue_dot_test_app/widgets/custom_info_widget.dart';
 import 'package:custom_info_window/custom_info_window.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-
-import 'custom_info_widget.dart';
 
 class MapWidget extends StatefulWidget {
   const MapWidget({Key? key}) : super(key: key);

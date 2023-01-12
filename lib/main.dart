@@ -1,3 +1,4 @@
+import 'package:blue_dot_test_app/pages/detail_screen.dart';
 import 'package:blue_dot_test_app/pages/home_page.dart';
 import 'package:blue_dot_test_app/services/location_service.dart';
 import 'package:blue_dot_test_app/utilities/logger.dart';
@@ -41,7 +42,10 @@ class MyApp extends StatelessWidget {
             fillColor: Colors.white,
           ),
         ),
-        home: const HomePage(),
+        routes: {
+          '/': (context) => const HomePage(),
+          DetailScreen.routeName: (context) => const DetailScreen(),
+        },
       ),
     );
   }
