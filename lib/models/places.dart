@@ -1,9 +1,6 @@
 import 'package:blue_dot_test_app/models/place_geometry.dart';
 
 class Place {
-  final String placeId;
-  final String name;
-  final Geometry geometry;
 
   Place({
     required this.placeId,
@@ -15,4 +12,7 @@ class Place {
       : placeId = parsedJson['place_id'],
         name = parsedJson['name'],
         geometry = Geometry.fromJson(parsedJson['geometry']);
+  final String placeId;
+  final String name;
+  final Geometry geometry;
 }

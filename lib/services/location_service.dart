@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:blue_dot_test_app/models/places.dart';
 import 'package:blue_dot_test_app/services/web_apis.dart';
@@ -10,24 +11,22 @@ import 'package:location/location.dart';
 class LocationService {
   LocationService() {
     currentMapPosition = CameraPosition(
-      target: LatLng(locationData.latitude!, locationData.longitude!),
+      target: locationLatLng,
       zoom: 14.4746,
     );
   }
 
   Location location = Location();
-  LocationData locationData = LocationData.fromMap({
-    'latitude': 37.42796133580664,
-    'longitude': -122.085749655962,
-  });
+  LatLng locationLatLng = const LatLng(37.42796133580664, -122.085749655962);
   ValueNotifier<List<Place>> placesList = ValueNotifier([]);
-  PermissionStatus _permissionGranted = PermissionStatus.denied;
+  PermissionStatus permissionGranted = PermissionStatus.denied;
   final Completer<GoogleMapController> controller =
       Completer<GoogleMapController>();
   late CameraPosition currentMapPosition;
   Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
+  String? currentSearchString;
 
-  Future<void> getLocationPermission() async {
+  Future<void> isPermissionGranted() async {
     bool serviceEnabled;
     serviceEnabled = await location.serviceEnabled();
     if (!serviceEnabled) {
@@ -36,46 +35,83 @@ class LocationService {
         return;
       }
     }
+    permissionGranted = await location.hasPermission();
+  }
 
-    _permissionGranted = await location.hasPermission();
-    if (_permissionGranted == PermissionStatus.denied) {
-      _permissionGranted = await location.requestPermission();
-      if (_permissionGranted != PermissionStatus.granted) {
+  Future<void> getLocationPermission() async {
+    await isPermissionGranted();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
         return;
       }
     }
+    showCurrentPosition();
   }
 
   Future<void> showCurrentPosition() async {
-    if (_permissionGranted != PermissionStatus.granted) {
+    if (permissionGranted != PermissionStatus.granted) {
       throw ('Location permission not granted');
     }
-    locationData = await location.getLocation();
+    LocationData locationData = await location.getLocation();
+    if (locationData.latitude != null && locationData.longitude != null) {
+      locationLatLng = LatLng(locationData.latitude!, locationData.longitude!);
+    }
     changeCurrentPosition();
   }
 
   Future<void> changeCurrentPosition() async {
-    if (locationData.latitude != null && locationData.longitude != null) {
-      Log.d('${locationData.latitude}, ${locationData.longitude}');
-      currentMapPosition = CameraPosition(
-        target: LatLng(locationData.latitude!, locationData.longitude!),
-        zoom: 14.4746,
-      );
-      final GoogleMapController mapController = await controller.future;
-      mapController.animateCamera(CameraUpdate.newCameraPosition(
+    Log.d('${locationLatLng.latitude}, ${locationLatLng.longitude}');
+    currentMapPosition = CameraPosition(
+      target: locationLatLng,
+      zoom: 14.4746,
+    );
+    final GoogleMapController mapController = await controller.future;
+    mapController.animateCamera(
+      CameraUpdate.newCameraPosition(
         currentMapPosition,
-      ));
-    }
+      ),
+    );
   }
 
   Future<void> searchNearByPlaces(String searchQuery) async {
     if (searchQuery.isEmpty) return;
-    if (locationData.latitude != null && locationData.longitude != null) {
-      placesList.value = await WebApiService().getNearByPlaces(
-        LatLng(locationData.latitude!, locationData.longitude!),
-        searchQuery,
-        radius: 1500,
-      );
-    }
+    currentSearchString = searchQuery;
+    double radius = await getMapVisibleRadius();
+    final result = await WebApiService().getNearByPlaces(
+      locationLatLng,
+      searchQuery,
+      radius: radius.toInt(),
+    );
+    Log.d('Received ${result.length} results');
+    placesList.value = List.from(result);
+  }
+
+  void updateLocation(LatLng latLng) {
+    locationLatLng = latLng;
+    placesList.value = List.from([]);
+    changeCurrentPosition();
+  }
+
+  void updateSearchResults() {
+    Log.d('updating search results');
+    if (currentSearchString != null) {}
+  }
+
+  Future<double> getMapVisibleRadius() async {
+    final GoogleMapController googleMapController = await controller.future;
+    LatLngBounds visibleRegion = await googleMapController.getVisibleRegion();
+    LatLng farLeft = visibleRegion.northeast;
+    LatLng nearRight = visibleRegion.southwest;
+    var p = 0.017453292519943295;
+    var c = cos;
+    var a = 0.5 -
+        c((farLeft.latitude - nearRight.latitude) * p) / 2 +
+        c(nearRight.latitude * p) *
+            c(farLeft.latitude * p) *
+            (1 - c((farLeft.longitude - nearRight.longitude) * p)) /
+            2;
+    double radiusInKm = 12742 * asin(sqrt(a));
+    return radiusInKm * 1000;
   }
 }

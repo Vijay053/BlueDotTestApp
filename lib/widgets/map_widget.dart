@@ -21,7 +21,14 @@ class MapWidget extends StatelessWidget {
               onMapCreated: (GoogleMapController controller) {
                 locationService.controller.complete(controller);
               },
+              onCameraMove: (CameraPosition position) =>
+                  locationService.locationLatLng = position.target,
+              onCameraIdle: () => locationService.updateSearchResults(),
+              zoomControlsEnabled: false,
               markers: getMarkerWidgetList(placesList),
+              onTap: (LatLng latLng) {
+                locationService.updateLocation(latLng);
+              },
             ),
           ),
           Positioned.fill(
@@ -54,16 +61,18 @@ class MapWidget extends StatelessWidget {
   }
 
   Set<Marker> getMarkerWidgetList(List<Place> markerList) {
-    return markerList
-        .map((Place place) => Marker(
-              markerId: MarkerId(place.placeId),
-              position: LatLng(
-                place.geometry.location.lat,
-                place.geometry.location.lng,
-              ),
-              infoWindow: InfoWindow(title: place.name, snippet: '*'),
-              onTap: () {},
-            ))
-        .toSet();
+    return markerList.map(
+      (Place place) {
+        return Marker(
+          markerId: MarkerId(place.placeId),
+          position: LatLng(
+            place.geometry.location.lat,
+            place.geometry.location.lng,
+          ),
+          infoWindow: InfoWindow(title: place.name, snippet: '*'),
+          onTap: () {},
+        );
+      },
+    ).toSet();
   }
 }
