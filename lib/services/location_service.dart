@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
+/// This class handles all location related logic
 class LocationService {
   LocationService() {
     currentMapPosition = CameraPosition(
@@ -75,6 +76,7 @@ class LocationService {
   }
 
   Future<void> searchNearByPlaces(String searchQuery) async {
+    placesList.value = [];
     if (searchQuery.isEmpty) return;
     currentSearchString = searchQuery;
     double radius = await getMapVisibleRadius();
@@ -89,7 +91,6 @@ class LocationService {
 
   void updateLocation(LatLng latLng) {
     locationLatLng = latLng;
-    placesList.value = List.from([]);
     changeCurrentPosition();
   }
 
