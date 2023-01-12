@@ -1,10 +1,16 @@
 import 'dart:async';
 
+import 'package:blue_dot_test_app/models/places.dart';
+import 'package:blue_dot_test_app/services/web_apis.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
 class LocationService {
   Location location = Location();
+  LocationData locationData = LocationData.fromMap({
+    'latitude': 37.42796133580664,
+    'longitude': -122.085749655962,
+  });
   PermissionStatus _permissionGranted = PermissionStatus.denied;
   final Completer<GoogleMapController> controller =
       Completer<GoogleMapController>();
@@ -36,21 +42,30 @@ class LocationService {
     if (_permissionGranted != PermissionStatus.granted) {
       throw ('Location permission not granted');
     }
-    final locationData = await location.getLocation();
+    locationData = await location.getLocation();
+    changeCurrentPosition();
+  }
+
+  Future<void> changeCurrentPosition() async {
     if (locationData.latitude != null && locationData.longitude != null) {
-      changeCurrentPosition(
-          LatLng(locationData.latitude!, locationData.longitude!));
+      currentMapPosition = CameraPosition(
+        target: LatLng(locationData.latitude!, locationData.longitude!),
+        zoom: 14.4746,
+      );
+      final GoogleMapController mapController = await controller.future;
+      mapController.animateCamera(CameraUpdate.newCameraPosition(
+        currentMapPosition,
+      ));
     }
   }
 
-  Future<void> changeCurrentPosition(LatLng newPosition) async {
-    currentMapPosition = CameraPosition(
-      target: newPosition,
-      zoom: 14.4746,
-    );
-    final GoogleMapController mapController = await controller.future;
-    mapController.animateCamera(CameraUpdate.newCameraPosition(
-      currentMapPosition,
-    ));
+  Future<void> getNearByPlaces(String searchQuery) async {
+    if (locationData.latitude != null && locationData.longitude != null) {
+      List<Place> places = await WebApiService().getNearByPlaces(
+        LatLng(locationData.latitude!, locationData.longitude!),
+        searchQuery,
+        radius: 1500,
+      );
+    }
   }
 }

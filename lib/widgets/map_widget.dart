@@ -18,7 +18,8 @@ class MapWidget extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.small(
-        onPressed: () => locationService.showCurrentPosition(),
+        onPressed: () => locationService.getNearByPlaces('atm'),
+        // onPressed: () => locationService.showCurrentPosition(),
         backgroundColor: Colors.white,
         child: const Icon(
           Icons.location_searching_rounded,
